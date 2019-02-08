@@ -1,13 +1,13 @@
 Crafty.scene('start', function() {
 	selectedGame = 0;
-	games = ['Pong', 'Breakout', 'Snake'];
+	games = ['Pong', 'Breakout*', 'Qix*', 'Warlords*', 'Tetris*', 'Loadrunner*', 'Thrust*', 'Asteroids*'];
 	$games = undefined;
 
 	// components
 	Crafty.c('start_game', {
 		required: 'DOM, Color, Text',
 		init: function () {
-			this.textColor('black')
+			this.textColor('teal')
 			this.textFont({
 				family: 'impact',
 				size: '30px',
@@ -15,10 +15,10 @@ Crafty.scene('start', function() {
 			this.bind('select', function() {
 				console.log('Im selected')
 				$games.each(function() {this.trigger('blur')})
-				this.textColor('silver')
+				this.textColor('#eee')
 			})
 			this.bind('blur', function() {
-				this.textColor('black')
+				this.textColor('teal')
 			})
 		}
 	});
@@ -26,7 +26,7 @@ Crafty.scene('start', function() {
 	// entities
 	Crafty.e('Text, DOM, Color')
 		.attr({x: 50,y: 100,w: 400})
-		.textColor('black')
+		.textColor('olive')
 		.text('Paddle Waddle')
 		.textFont({
 			family: 'impact',
@@ -56,7 +56,7 @@ Crafty.scene('start', function() {
 
 	Crafty.e('Text, DOM, Color')
 		.attr({x:50, y:150, w:400})
-		.textColor('black')
+		.textColor('olive')
 		.text('Välj spel:')
 		.textFont({
 			family: 'impact',
@@ -66,7 +66,7 @@ Crafty.scene('start', function() {
 		let i = 0;
 		for (let i=0; i<games.length; i ++) {
 			Crafty.e('start_game')
-				.attr({x: 100, y:200+(i*30), w:200})
+				.attr({x: 100, y:180+(i*35), w:200})
 				.text(games[i])
 		}
 

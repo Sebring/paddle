@@ -5,7 +5,7 @@ const G = {
 	scenes: ['start'],
 	start: function () {
 		Crafty.init(this.width, this.height)
-		Crafty.background('thistle')
+		Crafty.background('#333')
 		Crafty.scene(this.scenes[0])
 	}
 }
