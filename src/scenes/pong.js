@@ -51,7 +51,7 @@ Crafty.scene('Pong', function() {
 	})
 
 	Crafty.c('Paddle', {
-		required: 'Grid, Motion, Collision, GamepadMultiway',
+		required: 'Grid, Motion, Collision, Gamepad',
 		init: function() {
 			this.color('olive')
 			this.size(1, 5)
@@ -60,50 +60,39 @@ Crafty.scene('Pong', function() {
 			this.points = 0
 		},
 		axisChange: function(e) {
-			let y = 225 + 225 * e.value // (game.h/2)-(paddle.h/2) + (game.h/2)-(paddle.h/2) * e.v
+			if (e.axis !== 0)
+				return
+			let y = 225 + 225 * e.value
 			this.lastY = this.y
 			this.y = y
 		},
 		score: function(point = 1) {
 			this.points += point
 		},
-		events: {'player_score': function(player) {
-			if (this.pId !== player.pId)
-				return
-			this.score++
-		}}
-	})
-
-	Crafty.c('Ball', {
-		required: 'Grid, Motion, Collision, AngularMotion',
-		init: function() {
-			this.color('#a0c080')
-			this.size(1, 1)
-			this.origin(5, 5)
-			this.hits = 0
-		},
-		reset: function(paddle) {
-			this.hits = 0
-			this.vx = 0 // ballInitVelocityX
-			this.vy = 0 // 100
-			this.x = paddle.ox
-			this.y = paddle.oy
-			this.ay = 0
-			this.ax = 0
-			this.resetAngularMotion()
-			this.rotation = 0
-			paddle.attach(this)
-		},
-		addHits: function() {
-			this.hits++
-			Crafty("Counter").text(this.hits);
-			this.increaseSpeed()
-		},
-		increaseSpeed: function() {
-			this.vx = Crafty.math.clamp((this.vx * speedIncrease), ballMaxVelocityX[0], ballMaxVelocityX[1])
-			this.vy = Crafty.math.clamp(this.vy, ballMaxVelocityY[0], ballMaxVelocityY[1])
-			// console.log(`vx ${this.vx} - vy: ${this.vy}`)
-		},
+		events: {
+			'player_score': function(player) {
+				if (this.pId !== player.pId)
+					return
+				this.score++
+			},
+			'GamepadAxisChange': function(e) {	// e: {axis: number, value: [-1 - 1]}
+				if (e.axis !== 0)
+					return
+				let y = 225 + 225 * e.value
+				this.lastY = this.y
+				this.y = y
+			},
+			'GamepadKeyChange': function(e) {	// e: {button: number, value: number, pressed: boolean}
+					if (e.button === 0 && !e.pressed) {
+						const b = Crafty('Ball').get(0)
+						if (b._parent === this) {
+							this.detach(b)
+							b.vy = this.y - this.lastY
+							b.vx = ballInitVelocityX * this.dir
+						}
+					}
+			}
+		}
 	})
 
 	Crafty.c('Score', {
@@ -154,15 +143,42 @@ Crafty.scene('Pong', function() {
 		.size(80, 1)
 		.place(0, 48)
 
+	ball = Crafty.c('Ball', {
+		required: 'Grid, Motion, Collision, AngularMotion',
+		init: function () {
+			this.color('#a0c080')
+			this.size(1, 1)
+			this.origin(5, 5)
+			this.hits = 0
+		},
+		reset: function (paddle) {
+			this.hits = 0
+			this.vx = 0 // ballInitVelocityX
+			this.vy = 0 // 100
+			this.x = paddle.ox
+			this.y = paddle.oy
+			this.ay = 0
+			this.ax = 0
+			this.resetAngularMotion()
+			this.rotation = 0
+			paddle.attach(this)
+		},
+		addHits: function () {
+			this.hits++
+			Crafty("Counter").text(this.hits);
+			this.increaseSpeed()
+		},
+		increaseSpeed: function () {
+			this.vx = Crafty.math.clamp((this.vx * speedIncrease), ballMaxVelocityX[0], ballMaxVelocityX[1])
+			this.vy = Crafty.math.clamp(this.vy, ballMaxVelocityY[0], ballMaxVelocityY[1])
+		},
+	})
+
 	player1 = Crafty.e('Paddle')
 		.attr({pId: 0, dir: 1})
 		.place(3, 2)
 		.origin(15, 25)
-		.gamepadMultiway({analog: true, speed: 0, gamepadIndex: 0})
-		.unbind('GamepadAxisChange')
-		.bind('GamepadAxisChange', function(e) {
-			this.axisChange(e)
-		})
+		.gamepad(0)
 		.bind('KeyDown', function(e) {
 			switch(e.key) {
 				case Crafty.keys.S:
@@ -205,11 +221,7 @@ Crafty.scene('Pong', function() {
 		.attr({ pId: 1, dir: -1 })
 		.place(-3, -7)
 		.origin(-15, 25)
-		.gamepadMultiway({ analog: true, speed: 0, gamepadIndex: 1 })
-		.unbind('GamepadAxisChange')
-		.bind('GamepadAxisChange', function (e) {
-			this.axisChange(e)
-		})
+		.gamepad(1)
 		.bind('KeyDown', function (e) {
 			switch (e.key) {
 				case Crafty.keys.DOWN_ARROW:
