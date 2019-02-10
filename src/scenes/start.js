@@ -1,6 +1,6 @@
 Crafty.scene('start', function() {
 	selectedGame = 0;
-	games = ['Pong', 'Breakout*', 'Qix*', 'Warlords*', 'Tetris*', 'Loadrunner*', 'Thrust*', 'Asteroids*'];
+	games = ['Pong', 'Gravitor', 'Breakout*', 'Qix*', 'Warlords*', 'Tetris*', 'Loadrunner*', 'Asteroids*'];
 	$games = undefined;
 
 	// components
@@ -72,6 +72,6 @@ Crafty.scene('start', function() {
 
 		// setup
 		$games = Crafty('start_game');
-		console.log('Games', $games);
+		// console.log('Games', $games);
 		$games.get(selectedGame % games.length).trigger('select')
 })
