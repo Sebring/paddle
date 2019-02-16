@@ -1,6 +1,6 @@
 Crafty.scene('start', function() {
 	selectedGame = 0;
-	games = ['Pong', 'Gravitor', 'Breakout*', 'Qix*', 'Warlords*', 'Tetris*', 'Loadrunner*', 'Asteroids*'];
+	games = ['Pong', 'Gravitor', 'Physics', 'Copter', 'Warlords*', 'Tetris*', 'Loadrunner*', 'Asteroids*'];
 	$games = undefined;
 
 	// components
