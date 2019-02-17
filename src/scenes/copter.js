@@ -6,25 +6,6 @@ Crafty.scene('Copter', function() {
 	/*
 	* C O M P O N E N T S
 	*/
-
-	Crafty.c('ViewportTrigger', {
-		required: '2D',
-		events: {
-			'EnterFrame': function () {
-				if (this.ox < 0) {
-					this.trigger('ViewportLeaveX', -1)
-				} else if (this.ox > Crafty.viewport._width) {
-					this.trigger('ViewportLeaveX', 1)
-				}
-				if (this.oy < 0) {
-					this.trigger('ViewportLeaveY', -1)
-				} else if (this.oy > Crafty.viewport._height) {
-					this.trigger('ViewportLeaveY', 1)
-				}
-			}
-		}
-	})
-
 	Crafty.c('Actor', {
 		required: 'PaddleAxis, ViewportTrigger, Color, Motion, Canvas',
 		events: {
@@ -54,6 +35,23 @@ Crafty.scene('Copter', function() {
 				console.log(e)
 				this.detach(stuntman)
 				stuntman.ay = gravity
+			},
+			'KeyDown': function (e) {
+				switch(e.key) {
+					case Crafty.keys.SPACE:
+						this.detach(stuntman)
+						stuntman.ay = gravity
+						break
+					case Crafty.keys.A:
+						this.vx = 100 * -copterVelocity
+						break
+					case Crafty.keys.D:
+						this.vx = 100 * copterVelocity
+						break
+					case Crafty.keys.S:
+						this.vx = 0
+						break
+				}
 			}
 		}
 	})
@@ -65,8 +63,18 @@ Crafty.scene('Copter', function() {
 		},
 		events: {
 			'PaddleAxisChange': function(e) {
-					this.vx = -e.value * truckVelocity
+				this.vx = -e.value * truckVelocity
+			},
+			'KeyDown': function (e) {
+				switch (e.key) {
+					case Crafty.keys.LEFT_ARROW:
+						this.vx = 100 * -truckVelocity
+						break
+					case Crafty.keys.RIGHT_ARROW:
+						this.vx = 100 * truckVelocity
+						break
 				}
+			},
 		}
 	})
 
@@ -84,6 +92,30 @@ Crafty.scene('Copter', function() {
 				if (first.obj.has('Truck')) {
 					Crafty('Rules').get(0).trigger('stuntmanSave', this)
 				}
+			},
+			'EnterFrame': function() {
+				this.vx = (this.vx * 0.99) | 0
+			}
+		}
+	})
+
+	Crafty.c('Cloud', {
+		required: 'ViewportTrigger, Color, Motion, Canvas, Collision',
+		init: function() {
+			this.checkHits('Stuntman')
+			this.color('#eeeeee')
+		},
+		events: {
+			'HitOn': function([first], ...data) {
+				if (first.obj.has('Stuntman')) {
+					let man = first.obj
+					man.vx = -this.vx
+				}
+			},
+			'ViewportLeaveX': function(e) {
+				console.log('cloud leave ', e)
+				if (!~e) this.ox = Crafty.viewport._width
+				if (~e) this.ox = 1
 			}
 		}
 	})
@@ -104,7 +136,6 @@ Crafty.scene('Copter', function() {
 		.attr({x:20, y:20, h: 20, w: 10})
 		.color('white')
 
-
 	/*
 	* R U L E S
 	*/
@@ -119,6 +150,8 @@ Crafty.scene('Copter', function() {
 				.textColor('teal'),
 			reset: function () {
 				stuntman.vy = 0
+				stuntman.vx = 0
+				stuntman.ax = 0
 				stuntman.ay = 0
 				stuntman.x = copter.ox
 				stuntman.y = copter.oy
@@ -133,10 +166,48 @@ Crafty.scene('Copter', function() {
 		.bind('stuntmanSave', function(_truck) {
 			console.log('bravo')
 			this.scoreUI.text(++this.score)
-			truckVelocity = 4;
-			copterVelocity = 6;
+			loadLevel(this.score)
 			this.reset();
 		})
 
 		R.reset()
+
+		loadLevel = function(index) {
+			let cloud_1 = Crafty('Cloud').get(0)
+			let cloud_2 = Crafty('Cloud').get(1)
+			switch(index) {
+				case 1:
+					Crafty.e('Cloud, Level')
+						.attr({ x: 200, y: 200, w: 100, h: 20 })
+					break
+				case 2:
+					cloud_1.vx = 50
+					break
+				case 3:
+					cloud_1.vx = 100
+					break
+				case 4:
+					cloud_1.vx = 150
+					break
+				case 5:
+					cloud_1.vx = 200
+					break;
+				case 6:
+					Crafty.e('Cloud, Level')
+						.attr({ X:200, y:300, w:100, h:20 })
+					break
+				case 7:
+					cloud_2.vx = -50
+					break
+				case 8:
+					cloud_2.vx = -100
+					break
+				case 9:
+					cloud_2.vx = -150
+					break
+				case 10:
+					cloud_2.vx = -200
+					break
+			}
+		}
 })
