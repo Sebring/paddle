@@ -1,7 +1,6 @@
 Crafty.scene('Pong', function() {
-	const grid = 10
 	const paddleVelocity = 400
-	const ballMaxVelocityX = [-500, 500]
+	const ballMaxVelocityX = [-1200, 1200]
 	const ballMaxVelocityY = [-300, 300]
 	const ballInitVelocityX = 100
 	const speedIncrease = 1.06
@@ -10,34 +9,6 @@ Crafty.scene('Pong', function() {
 	/*
 	* C O M P O N E N T S
 	*/
-	Crafty.c('Placable', {
-		place: function(x, y) {
-			if (x >= 0) {
-				this.x = x * grid
-			} else {
-				this.x = G.width + x * grid
-			}
-			if (y >= 0) {
-				this.y = y * grid
-			} else {
-				this.y = G.height + y * grid
-			}
-
-			return this
-		}
-	})
-
-	Crafty.c('Sizable', {
-		size: function(w, h) {
-			this.h = h * grid
-			this.w = w * grid
-			return this
-		}
-	})
-
-	Crafty.c('Grid', {
-		required: 'Placable, Sizable, 2D, Color, WebGL'
-	})
 
 	Crafty.c('Solid', {
 		required: 'Grid'
@@ -142,6 +113,13 @@ Crafty.scene('Pong', function() {
 	Crafty.e('Wall')
 		.size(80, 1)
 		.place(0, 48)
+		/* wall for one player mode
+	Crafty.e('Block')
+		.requires('Wall')
+		.size(1, 50)
+		.color('yellowgreen')
+		.place(75, 0)
+		*/
 
 	ball = Crafty.c('Ball', {
 		required: 'Grid, Motion, Collision, AngularMotion',
@@ -273,7 +251,9 @@ Crafty.scene('Pong', function() {
 				// advance game step
 				this.addHits()
 			}
-			if ((hitData = this.hit('Wall'))) {
+			if ((hitData = this.hit('Block'))) {
+				this.vx *=-1
+			} else if ((hitData = this.hit('Wall'))) {
 				this.vy *= -1
 			}
 		})
