@@ -35,23 +35,6 @@ Crafty.scene('Gravitor', function () {
 		originOffset: {x: 40, y: 95}
 	}, thrustParticles);
 
-	Crafty.c('WorldWrap', {
-		required: '2D',
-		events: {
-			'EnterFrame': function () {
-				if (this.ox < 0) {
-					this.ox = Crafty.viewport._width
-				} else if (this.ox > Crafty.viewport._width) {
-					this.ox = 0
-				}
-				if (this.oy < 0) {
-					this.oy = Crafty.viewport._height
-				} else if (this.oy > Crafty.viewport._height) {
-					this.oy = 0
-				}
-			}
-		}
-	})
 
 	Crafty.c('Bullet', {
 		required: '2D, Canvas, Color, Motion, WorldWrap',
@@ -123,7 +106,7 @@ Crafty.scene('Gravitor', function () {
 		.thrust()
 		.thrustGravity(0, 0)
 		.origin(25, 22.5)
-		.addComponent('WiredMBR')
+	//	.addComponent('WiredMBR')
 
 	Crafty.e('Bullet')
 		.fire(200, 200, 90)
@@ -131,7 +114,7 @@ Crafty.scene('Gravitor', function () {
 var fire = Crafty.e("2D, Canvas, Particles")
 	.attr({w: 80, h: 100})
 	.origin(40, 25)
-	.addComponent('WiredMBR')
+//	.addComponent('WiredMBR')
 	.particles(thrustDisabled)
 
 
