@@ -3,36 +3,31 @@ Crafty.scene('Gravitor', function () {
 	Crafty.sprite('/src/scenes/gravitor/ship.png', {'ship':[0,0,100,108]})
 
 	var thrustParticles = {
-		startColour: [255, 131, 0, 1], startColourRandom: [48, 50, 45, 0],
-			endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
-			sharpness: 20, sharpnessRandom: 10, // gradient sharpness -only applies when fastMode is off
-			spread: 4, jitter: 1, // sensible values are 0-3
-			duration: -1, // frames this should last
-			fastMode: true, // squares or circle gradients
-			gravity: {x: 0, y: 0},
-			originOffset: {x: 40, y: 95}
+
+		sharpness: 20, sharpnessRandom: 10, // gradient sharpness -only applies when fastMode is off
+		spread: 4, jitter: 1, // sensible values are 0-3
+		duration: -1, // frames this should last
+		fastMode: true, // squares or circle gradients
+		gravity: {x: 0, y: 0},
+		originOffset: {x: 40, y: 95}
 	}
 	var thrustEnabled = Object.assign({
+		startColour: [255, 131, 0, 1], startColourRandom: [48, 50, 45, 0],
+		endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
 		maxParticles: 20,
-		size: 8, sizeRandom: 2,
+		size: 10, sizeRandom: 3,
 		speed: 3, speedRandom: 1.2,
 		lifeSpan: 30, lifeSpanRandom: 10, // lifetime in frames
 		angle: 0, angleRandom: 15,
 	}, thrustParticles);
 	var thrustDisabled = Object.assign({
 		maxParticles: 5,
-		size: 6, sizeRandom: 2,
+		size: 8, sizeRandom: 1,
 		speed: 1, speedRandom: 0.5,
 		lifeSpan: 20, lifeSpanRandom: 5,
 		angle: 0, angleRandom: 25,
-		startColour: [255, 131, 0, 1], startColourRandom: [48, 50, 45, 0],
+		startColour: [100, 100, 200, 1], startColourRandom: [50, 50, 50, 0],
 		endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
-		sharpness: 20, sharpnessRandom: 10,
-		spread: 1, jitter: 0,
-		duration: -1,
-		fastMode: true,
-		gravity: {x: 0, y: 0},
-		originOffset: {x: 40, y: 95}
 	}, thrustParticles);
 
 
@@ -97,32 +92,162 @@ Crafty.scene('Gravitor', function () {
 				} else {
 					this.particles.particles(thrustDisabled);
 				}
+			},
+			'KeyDown': function(e) {
+				switch(e.key) {
+					case Crafty.keys.SPACE:
+						this.thrust = true
+						this.trigger('ThrustChanged', true)
+						break
+					case Crafty.keys.LEFT_ARROW:
+						this.vrotation = -80
+						break
+					case Crafty.keys.RIGHT_ARROW:
+						this.vrotation = 80
+						break
+					case Crafty.keys.SHIFT:
+						this.trigger('PaddleButton_A', {pressed: true})
+						break
+				}
+			},
+			'KeyUp': function(e) {
+				switch (e.key) {
+					case Crafty.keys.SPACE:
+						this.thrust = false
+						this.trigger('ThrustChanged', false)
+						break
+					case Crafty.keys.LEFT_ARROW:
+					case Crafty.keys.RIGHT_ARROW:
+						this.vrotation = 0
+						break
+				}
+			}
+		}
+	})
+
+	Crafty.c('Rock', {
+		required: 'Canvas, RandomColor, WorldWrap, Collision',
+		init: function() {
+			this.rock()
+			this.vx = Crafty.math.randomInt(-100, 100)
+			this.vy = Crafty.math.randomInt(-100, 100)
+			this.checkHits('Ship, Bullet')
+		},
+		rock: function(size=4) {
+			this.size = size
+			this.h = 20*size
+			this.w = 20*size
+			return this
+		},
+		split: function(nr) {
+			if (this.size === 1) return
+			const pOx = this.ox
+			const pOy = this.oy
+			for (let i=0; i<nr; i++) {
+				Crafty.e('Rock')
+					.attr({ox:pOx, oy:pOy})
+					.rock(this.size/2)
+			}
+		},
+		events: {
+			'HitOn': function([first], ...rest) {
+				if (first.obj.has('Ship')) {
+					this.destroy()
+					first.obj.trigger('Crash', this)
+					R.trigger('CrashShip')
+					this.trigger('Split')
+				}
+				if (first.obj.has('Bullet')) {
+					first.obj.destroy()
+					this.trigger('Split')
+					R.trigger('HitRock')
+				}
+			},
+			'Split': function() {
+				this.split(2)
+				this.destroy()
 			}
 		}
 	})
 
 	const ship = Crafty.e('Ship')
-		.attr({x: 100, y: 100, h:50, w:55})
+		.attr({ x: 100, y: 100, w:50, h:50})
 		.thrust()
 		.thrustGravity(0, 0)
-		.origin(25, 22.5)
-	//	.addComponent('WiredMBR')
+		.origin(24.5, 24.5)
 
-	Crafty.e('Bullet')
-		.fire(200, 200, 90)
+	var exhaust = Crafty.e("2D, Canvas, Particles")
+		.attr({w: 80, h: 100})
+		.origin(44, 25)
+		.particles(thrustDisabled)
 
-var fire = Crafty.e("2D, Canvas, Particles")
-	.attr({w: 80, h: 100})
-	.origin(40, 25)
-//	.addComponent('WiredMBR')
-	.particles(thrustDisabled)
-
-
-	fire.ox = ship.ox
-	fire.y = ship.y-fire.h
-	ship.attach(fire)
-	ship.setParticles(fire)
+	exhaust.ox = ship.ox
+	exhaust.y = ship.y-exhaust.h
+	ship.attach(exhaust)
+	ship.setParticles(exhaust)
 	ship.rotation = 180
 
-	console.log('vp', Crafty.viewport._width)
+	/*
+	* R U L E S
+	*/
+	let R = Crafty.e('Rules, Delay')
+		.attr({
+			score: 0,
+			level: 1,
+			scoreUI: Crafty.e('Score, Text, DOM, Color')
+				.attr({ x: 0, y: 30, w: 800, value: 0 })
+				.textAlign('center')
+				.textFont({ family: 'impact', size: '30px', type: 'bold' })
+				.text(0)
+				.textColor('teal'),
+			reset: function() {
+				Crafty('Rock').each(function() {
+					this.destroy()
+				})
+				ship.ox = Crafty.viewport._width/2
+				ship.oy = Crafty.viewport._height/2
+			},
+			loadLevel: function(level=this.level) {
+				this.reset()
+				/*
+				switch(level) {
+					case 1:
+						this.addRocks(1, 4)
+						break;
+					case 2:
+						this.addRocks(2, 4)
+						break;
+				}*/
+				this.addRocks(this.level, 4)
+
+			},
+			addRocks: function(noOfRocks, size) {
+				if (!(size | 0)) return
+				for (let i=0; i<noOfRocks; i++) {
+					Crafty.e('Rock')
+						.attr({x:13, y:10})
+						.rock(size)
+				}
+			}
+		})
+		.bind('HitRock', function() {
+			this.scoreUI.text(++this.score)
+			if (!Crafty('Rock').length) {
+				this.loadLevel(++this.level)
+			}
+		})
+		.bind('CrashShip', function() {
+			Crafty('Rock').each(function() {
+				this.ignoreHits('Ship')
+			})
+			this.delay(function() {
+				this.score = 0
+				this.level = 1
+				this.scoreUI.text(this.score)
+				this.loadLevel(this.level)
+			}, 4000)
+		})
+
+		R.loadLevel(1)
+
 	})
