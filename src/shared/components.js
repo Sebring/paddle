@@ -1,5 +1,5 @@
 Crafty.c('WorldWrap', {
-	required: '2D',
+	required: '2D, Motion',
 	events: {
 		'EnterFrame': function () {
 			if (this.ox < 0) {
@@ -41,6 +41,7 @@ Crafty.c('Grid', {
 	},
 	grid: function(size) {
 		this.grid = size
+		return this
 	},
 	size: function(w, h) {
 		this.h = h * this.grid
@@ -59,5 +60,15 @@ Crafty.c('Grid', {
 			this.y = G.height + y * this.grid
 		}
 		return this
+	}
+})
+
+Crafty.c('RandomColor', {
+	required: 'Color',
+	init: function(){
+		let r = Crafty.math.randomInt(50, 250)
+		let g = Crafty.math.randomInt(50, 250)
+		let b = Crafty.math.randomInt(50, 250)
+		this.color(r, g, b)
 	}
 })
