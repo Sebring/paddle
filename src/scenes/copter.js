@@ -7,16 +7,7 @@ Crafty.scene('Copter', function() {
 	* C O M P O N E N T S
 	*/
 	Crafty.c('Actor', {
-		required: 'PaddleAxis, ViewportTrigger, Color, Motion, Canvas',
-		events: {
-			'ViewportLeaveX': function(e) {
-				console.log('leaveX', e)
-				this.vx = 0
-				this.ax = 0
-				if (!~e) this.ox = 1
-				if (~e) this.ox = Crafty.viewport._width - 1
-			}
-		}
+		required: 'PaddleAxis, WorldWrap, Color, Motion, Canvas'
 	})
 
 	Crafty.c('Copter', {
@@ -106,7 +97,7 @@ Crafty.scene('Copter', function() {
 			this.color('#eeeeee')
 		},
 		events: {
-			'HitOn': function([first], ...data) {
+			'HitOn': function([first], ...rest) {
 				if (first.obj.has('Stuntman')) {
 					let man = first.obj
 					man.vx = -this.vx
