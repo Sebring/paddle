@@ -1,15 +1,21 @@
 Crafty.scene('Gravitor', function () {
 
-	Crafty.sprite('/src/scenes/gravitor/ship.png', {'ship':[0,0,100,108]})
+	// Crafty.sprite('/src/scenes/gravitor/ship.png', {'ship':[0,0,100,108]})
+	Crafty.sprite('/src/scenes/gravitor/rock.png',
+	{'rock-4-1':[0,0,250,250], 'rock-4-2': [250,0,250,250],
+	'rock-2-1': [0,250,250,250], 'rock-2-2': [250,250,250,250],
+	'rock-1-1':[0,500,250,250], 'rock-1-2': [250,500,250,250],
+	'ship':[500,500,250,250]}
+	)
 
 	var thrustParticles = {
 
 		sharpness: 20, sharpnessRandom: 10, // gradient sharpness -only applies when fastMode is off
 		spread: 4, jitter: 1, // sensible values are 0-3
 		duration: -1, // frames this should last
-		fastMode: true, // squares or circle gradients
+		fastMode: false, // squares or circle gradients
 		gravity: {x: 0, y: 0},
-		originOffset: {x: 40, y: 95}
+		originOffset: {x: 40, y: 5}
 	}
 	var thrustEnabled = Object.assign({
 		startColour: [255, 131, 0, 1], startColourRandom: [48, 50, 45, 0],
@@ -18,14 +24,14 @@ Crafty.scene('Gravitor', function () {
 		size: 10, sizeRandom: 3,
 		speed: 3, speedRandom: 1.2,
 		lifeSpan: 30, lifeSpanRandom: 10, // lifetime in frames
-		angle: 0, angleRandom: 15,
+		angle: 180, angleRandom: 15,
 	}, thrustParticles);
 	var thrustDisabled = Object.assign({
 		maxParticles: 5,
 		size: 8, sizeRandom: 1,
 		speed: 1, speedRandom: 0.5,
 		lifeSpan: 20, lifeSpanRandom: 5,
-		angle: 0, angleRandom: 25,
+		angle: 180, angleRandom: 25,
 		startColour: [100, 100, 200, 1], startColourRandom: [50, 50, 50, 0],
 		endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
 	}, thrustParticles);
@@ -43,8 +49,8 @@ Crafty.scene('Gravitor', function () {
 			this.x = ox
 			this.y = oy
 			const p = Crafty.math.degToRad(angle)
-			const px = Math.sin(p) * -1
-		  const py = Math.cos(p)
+			const px = Math.sin(p)
+		  const py = -Math.cos(p)
 			this.vx = power * px
 			this.vy = power * py
 		},
@@ -126,21 +132,30 @@ Crafty.scene('Gravitor', function () {
 	})
 
 	Crafty.c('Rock', {
-		required: 'Canvas, RandomColor, WorldWrap, Collision',
+		required: 'Canvas, WorldWrap, Collision, AngularMotion',
 		init: function() {
-			this.rock()
 			this.vx = Crafty.math.randomInt(-100, 100)
 			this.vy = Crafty.math.randomInt(-100, 100)
 			this.checkHits('Ship, Bullet')
 		},
 		rock: function(size=4) {
+			let r = Crafty.math.randomInt(1, 2)
+			this.addComponent(`rock-${size}-${r}`)
 			this.size = size
 			this.h = 20*size
 			this.w = 20*size
+			this.origin(this.w/2, this.h/2)
+			r = Crafty.math.randomInt(-100, 100)
+			this.vrotation = r
 			return this
 		},
-		split: function(nr) {
-			if (this.size === 1) return
+		split: function(nr, destroy = true) {
+			if (this.size === 1) {
+				if (destroy) {
+					this.destroy()
+				 }
+				return
+			}
 			const pOx = this.ox
 			const pOy = this.oy
 			for (let i=0; i<nr; i++) {
@@ -148,6 +163,8 @@ Crafty.scene('Gravitor', function () {
 					.attr({ox:pOx, oy:pOy})
 					.rock(this.size/2)
 			}
+			if (destroy)
+				this.destroy()
 		},
 		events: {
 			'HitOn': function([first], ...rest) {
@@ -158,6 +175,7 @@ Crafty.scene('Gravitor', function () {
 					this.trigger('Split')
 				}
 				if (first.obj.has('Bullet')) {
+					console.log('bullet')
 					first.obj.destroy()
 					this.trigger('Split')
 					R.trigger('HitRock')
@@ -165,7 +183,6 @@ Crafty.scene('Gravitor', function () {
 			},
 			'Split': function() {
 				this.split(2)
-				this.destroy()
 			}
 		}
 	})
@@ -182,10 +199,13 @@ Crafty.scene('Gravitor', function () {
 		.particles(thrustDisabled)
 
 	exhaust.ox = ship.ox
-	exhaust.y = ship.y-exhaust.h
+	exhaust.y = ship.y+ship.h
+	exhaust.addComponent('WiredMBR')
+	ship.addComponent('WiredMBR')
 	ship.attach(exhaust)
+
 	ship.setParticles(exhaust)
-	ship.rotation = 180
+	// ship.rotation = 180
 
 	/*
 	* R U L E S
@@ -222,6 +242,7 @@ Crafty.scene('Gravitor', function () {
 
 			},
 			addRocks: function(noOfRocks, size) {
+				console.log('Rules addRock', size)
 				if (!(size | 0)) return
 				for (let i=0; i<noOfRocks; i++) {
 					Crafty.e('Rock')
