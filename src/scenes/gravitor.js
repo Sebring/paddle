@@ -5,8 +5,9 @@ Crafty.scene('Gravitor', function () {
 	{'rock-4-1':[0,0,250,250], 'rock-4-2': [250,0,250,250],
 	'rock-2-1': [0,250,250,250], 'rock-2-2': [250,250,250,250],
 	'rock-1-1':[0,500,250,250], 'rock-1-2': [250,500,250,250],
-	'ship':[500,500,250,250]}
-	)
+	'ship': [500,0,250,300]
+	// 'ship':[500,500,250,250]
+	})
 
 	var thrustParticles = {
 
@@ -36,6 +37,21 @@ Crafty.scene('Gravitor', function () {
 		endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
 	}, thrustParticles);
 
+	var shipParticles = {
+		sharpness: 20, sharpnessRandom: 10,
+		spread: 2, jitter: 0,
+		duration: 60,
+		fastMode: false,
+		gravity: {x: 0, y:0},
+		originOffset: {x:200, y:200},
+		startColour: [200, 50, 50, 1], startColourRandom: [100, 50, 50, 0.7],
+		endColour: [50, 50, 50, 0.5], endColourRandom: [50, 50, 50 , 0],
+		maxParticles: 100,
+		size: 30, sizeRandom: 15,
+		speed: 2, speedRandom: 0.5,
+		lifeSpan: 250, lifeSpanRandom: 50,
+		angle: 0, angleRandom: 360
+	}
 
 	Crafty.c('Bullet', {
 		required: '2D, Canvas, Color, Motion, WorldWrap',
@@ -87,7 +103,7 @@ Crafty.scene('Gravitor', function () {
 	})
 
 	Crafty.c('Ship', {
-		required: 'Canvas, Collision, ship, Thrust, WorldWrap, Shooter',
+		required: 'Canvas, Collision, ship, Thrust, WorldWrap, Shooter, Renderable',
 		setParticles(particles) {
 			this.particles = particles;
 		},
@@ -100,6 +116,7 @@ Crafty.scene('Gravitor', function () {
 				}
 			},
 			'KeyDown': function(e) {
+				if (this._paddleDisabled) return
 				switch(e.key) {
 					case Crafty.keys.SPACE:
 						this.thrust = true
@@ -127,6 +144,26 @@ Crafty.scene('Gravitor', function () {
 						this.vrotation = 0
 						break
 				}
+			},
+			'Explode': function() {
+				this._paddleDisabled = true
+				this.xplode = Crafty.e("2D, Canvas, Particles")
+					.attr({ w: 400, h: 400 })
+					.origin(200, 200)
+					.particles(shipParticles)
+
+				// xplode.vrotation = ship.vrotation
+				this.xplode.ox = this.ox
+				this.xplode.oy = this.oy
+				this.attach(this.xplode)
+				this.visible = false
+				this.particles.visible = false
+			},
+			'Restore': function() {
+				this._paddleDisabled = false
+				this.xplode.destroy()
+				this.visible = true
+				this.particles.visible = true
 			}
 		}
 	})
@@ -169,10 +206,10 @@ Crafty.scene('Gravitor', function () {
 		events: {
 			'HitOn': function([first], ...rest) {
 				if (first.obj.has('Ship')) {
-					this.destroy()
 					first.obj.trigger('Crash', this)
 					R.trigger('CrashShip')
 					this.trigger('Split')
+					this.destroy()
 				}
 				if (first.obj.has('Bullet')) {
 					console.log('bullet')
@@ -193,15 +230,13 @@ Crafty.scene('Gravitor', function () {
 		.thrustGravity(0, 0)
 		.origin(24.5, 24.5)
 
-	var exhaust = Crafty.e("2D, Canvas, Particles")
+	const exhaust = Crafty.e("2D, Canvas, Particles")
 		.attr({w: 80, h: 100})
 		.origin(44, 25)
 		.particles(thrustDisabled)
 
 	exhaust.ox = ship.ox
 	exhaust.y = ship.y+ship.h
-	exhaust.addComponent('WiredMBR')
-	ship.addComponent('WiredMBR')
 	ship.attach(exhaust)
 
 	ship.setParticles(exhaust)
@@ -229,17 +264,10 @@ Crafty.scene('Gravitor', function () {
 			},
 			loadLevel: function(level=this.level) {
 				this.reset()
-				/*
-				switch(level) {
-					case 1:
-						this.addRocks(1, 4)
-						break;
-					case 2:
-						this.addRocks(2, 4)
-						break;
-				}*/
+				ship.vx = 0
+				ship.vy = 0
+				ship.vrotation = 0
 				this.addRocks(this.level, 4)
-
 			},
 			addRocks: function(noOfRocks, size) {
 				console.log('Rules addRock', size)
@@ -261,11 +289,14 @@ Crafty.scene('Gravitor', function () {
 			Crafty('Rock').each(function() {
 				this.ignoreHits('Ship')
 			})
+			ship.trigger('Explode')
+
 			this.delay(function() {
 				this.score = 0
 				this.level = 1
 				this.scoreUI.text(this.score)
 				this.loadLevel(this.level)
+				ship.trigger('Restore')
 			}, 4000)
 		})
 
