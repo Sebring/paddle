@@ -37,17 +37,17 @@ Crafty.scene('Gravitor', function () {
 		endColour: [245, 35, 0, 0], endColourRandom: [60, 60, 60, 0],
 	}, thrustParticles);
 
-	var shipParticles = {
+	var shipExplode = {
 		sharpness: 20, sharpnessRandom: 10,
-		spread: 2, jitter: 0,
-		duration: 60,
-		fastMode: false,
+		spread: 2, jitter: 1,
+		duration: 50,
+		fastMode: true,
 		gravity: {x: 0, y:0},
 		originOffset: {x:200, y:200},
-		startColour: [200, 50, 50, 1], startColourRandom: [100, 50, 50, 0.7],
-		endColour: [50, 50, 50, 0.5], endColourRandom: [50, 50, 50 , 0],
+		startColour: [200, 150, 150, 1], startColourRandom: [100, 50, 50, 0.7],
+		endColour: [50, 50, 50, 0], endColourRandom: [50, 50, 50 , 0],
 		maxParticles: 100,
-		size: 30, sizeRandom: 15,
+		size: 15, sizeRandom: 15,
 		speed: 2, speedRandom: 0.5,
 		lifeSpan: 250, lifeSpanRandom: 50,
 		angle: 0, angleRandom: 360
@@ -104,15 +104,26 @@ Crafty.scene('Gravitor', function () {
 
 	Crafty.c('Ship', {
 		required: 'Canvas, Collision, ship, Thrust, WorldWrap, Shooter, Renderable',
-		setParticles(particles) {
-			this.particles = particles;
+		setExplosion(xplode) {
+			xplode.ox = this.ox
+			xplode.oy = this.oy
+			xplode.particles(shipExplode)
+			xplode.visible = false
+			this.attach(xplode)
+			this.prtcls_xplode = xplode
+		},
+		setExhaust(particles) {
+			particles.ox = this.ox
+			particles.y = this.y + this.h
+			this.attach(particles)
+			this.prtcls_thrust = particles
 		},
 		events: {
 			'ThrustChanged': function(thrust) {
 				if (thrust) {
-					this.particles.particles(thrustEnabled)
+					this.prtcls_thrust.particles(thrustEnabled)
 				} else {
-					this.particles.particles(thrustDisabled);
+					this.prtcls_thrust.particles(thrustDisabled)
 				}
 			},
 			'KeyDown': function(e) {
@@ -147,23 +158,17 @@ Crafty.scene('Gravitor', function () {
 			},
 			'Explode': function() {
 				this._paddleDisabled = true
-				this.xplode = Crafty.e("2D, Canvas, Particles")
-					.attr({ w: 400, h: 400 })
-					.origin(200, 200)
-					.particles(shipParticles)
-
-				// xplode.vrotation = ship.vrotation
-				this.xplode.ox = this.ox
-				this.xplode.oy = this.oy
-				this.attach(this.xplode)
+				this.prtcls_xplode.visible = true
+				this.prtcls_xplode.particles()
 				this.visible = false
-				this.particles.visible = false
+				this.prtcls_thrust.visible = false
+				console.log('xplosios', Crafty('Xplode').length)
 			},
 			'Restore': function() {
 				this._paddleDisabled = false
-				this.xplode.destroy()
 				this.visible = true
-				this.particles.visible = true
+				this.prtcls_xplode.visible = false
+				this.prtcls_thrust.visible = true
 			}
 		}
 	})
@@ -230,17 +235,18 @@ Crafty.scene('Gravitor', function () {
 		.thrustGravity(0, 0)
 		.origin(24.5, 24.5)
 
-	const exhaust = Crafty.e("2D, Canvas, Particles")
+	const exhaust = Crafty.e("Exhaust, 2D, Canvas, Particles")
 		.attr({w: 80, h: 100})
 		.origin(44, 25)
 		.particles(thrustDisabled)
 
-	exhaust.ox = ship.ox
-	exhaust.y = ship.y+ship.h
-	ship.attach(exhaust)
+	const xplode = Crafty.e("Xplode, 2D, Canvas, Particles")
+		.attr({ w: 300, h: 300 })
+		.origin(150, 150)
 
-	ship.setParticles(exhaust)
-	// ship.rotation = 180
+		xplode.addComponent('WiredMBR')
+	ship.setExplosion(xplode)
+	ship.setExhaust(exhaust)
 
 	/*
 	* R U L E S
